@@ -18,7 +18,7 @@ async function userRegisterController(req,res){
 
     if(isExists){
         return res.status(422).json({
-            message : "USer already exists with this email",
+            message : "User already exists with this email",
             status : "failed"
         })
     }
@@ -32,7 +32,7 @@ async function userRegisterController(req,res){
     res.cookie("token",token)
 
     res.status(201).json({
-        message : "USer created succesfully",
+        message : "User created succesfully",
         user : {
             _id : user._id,
             email : user.email,
@@ -78,7 +78,7 @@ async function userLoginController(req,res){
     res.cookie("token",token)
 
     res.status(200).json({
-        message : "User created succesfully",
+        message : "User logged-in succesfully",
         user : {
             _id : user._id,
             email : user.email,
