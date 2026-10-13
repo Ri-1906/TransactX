@@ -14,7 +14,7 @@ const ledgerSchema = new mongoose.Schema({
         required : [true, "Account is required for creating a ledger entry"],
         immutable : true
     },
-    treansaction : {
+    transaction : {
         type: mongoose.Schema.Types.ObjectId,
         ref : "transaction",
         required : [true, "Ledger must be associated with a transaction"],
@@ -28,7 +28,7 @@ const ledgerSchema = new mongoose.Schema({
             message : "Type can be either CREDIT or DEBIT"
         },
         required: [true,"Ledger type is required"],
-        immuatble : true
+        immutable : true
     }
 })
 
