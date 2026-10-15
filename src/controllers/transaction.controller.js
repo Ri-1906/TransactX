@@ -113,46 +113,68 @@ async function createTransaction(req,res){
      */
     // 5 to 8 yaa to saare complete honge ya ek b nhi 
 
-    const session = await mongoose.startSession()
-    session.startTransaction() //provided by mongoose ki iske aage jo b hga either fully or nothing (Atomic)
 
-    const transaction = new transactionModel({
-        fromAccount,
-        toAccount,
-        amount,
-        idempotencyKey,
-        status : "PENDING"
-    })
-
-    /**
-     * - Create Debit ledger entry
-     */
+    let transaction;
 
 
-    const debitLedgerEntry = await ledgerModel.create([{
-        account : fromAccount,
-        amount: amount,
-        transaction: transaction._id,
-        type: "DEBIT"
-    }],{session})
+    try{
+        const session = await mongoose.startSession()
+        session.startTransaction() //provided by mongoose ki iske aage jo b hga either fully or nothing (Atomic)
 
-    /**
-     * - Create Credit Ledger Entry
-     */
+        const transaction = (await transactionModel.create([{
+            fromAccount,
+            toAccount,
+            amount,
+            idempotencyKey,
+            status : "PENDING"
+        }], {session}))[0]
 
-    const crebitLedgerEntry = await ledgerModel.create([{
-        account: toAccount,
-        amount: amount,
-        transaction: transaction._id,
-        type: "CREDIT"
-    }], {session})
+        /**
+         * - Create Debit ledger entry
+         */
 
-    /**
-     * - Mark transaction as Complete
-     */
 
-    transaction.status = "COMPLETED"
-    session.endSession()
+        const debitLedgerEntry = await ledgerModel.create([{
+            account : fromAccount,
+            amount: amount,
+            transaction: transaction._id,
+            type: "DEBIT"
+        }],{session}) 
+
+
+        // await (() => {
+        //     return new Promise((resolve) => setTimeout(resolve,15 * 1000))
+        // })()
+
+        /**
+         * - Create Credit Ledger Entry
+         */
+
+        const crebitLedgerEntry = await ledgerModel.create([{
+            account: toAccount,
+            amount: amount,
+            transaction: transaction._id,
+            type: "CREDIT"
+        }], {session})
+
+        /**
+         * - Mark transaction as Complete
+         */
+
+        await transactionModel.findOneAndUpdate(
+            {_id: transaction._id},
+            {status: "COMPLETED"},
+            {session}
+        )
+
+
+        await session.commitTransaction()
+        session.endSession()
+    } catch(err){
+        return res.status(400).json({
+            message : "Transaction is pending due to some issue, Please retry after sometime"
+        })
+    }
 
     /**
      * Send Email Notification
